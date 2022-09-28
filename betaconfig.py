@@ -5,7 +5,7 @@
 #### If you have not, set this to 0.
 #### Only BetaStare and BetaTV are supported with gpu_enabled = 0, 
 #### BetaVision is only supported with gpu_enabled=1.
-gpu_enabled=0
+gpu_enabled=1
 
 ###################################################################
 #### Neural Net input size.  This controls how the net views the image.
@@ -32,15 +32,25 @@ picture_sizes = [ 1280 ]
 video_censor_fps = 5
 
 ##################################################################
+#### If random censoring is chosen, on every frame that is censored
+#### a new censor method is chosen and will be applied.
+#### feature_tracking_tolerance is the max distance the same feature
+#### e.g. covered_breast can move during 2 frames at which censoring 
+#### is calculated (see video_censor_fps) to keep the same censoring
+#### method. 0.5 means it can "travel" and change up to 50% of the 
+#### video size. Further testing required for a good value.
+feature_tracking_tolerance = 0.5
+
+##################################################################
 #### BetaVision works by capturing uncensored content from one
 #### part of your screen and displaying it censored on another
 #### part of your screen.  Here, configure what part of the screen
 #### holds the uncensored content.  
 vision_cap_monitor = 0 # 0 means 'all monitors'.  You can almost certainly leave this as 0.
 vision_cap_top = 0
-vision_cap_left = 0
-vision_cap_height = 1080
-vision_cap_width = 960
+vision_cap_left = -2560
+vision_cap_height = 1440
+vision_cap_width = 2560
 
 ###################################################################
 ###### censoring config
@@ -57,13 +67,13 @@ items_to_censor = [
     'covered_vulva',
     'covered_breast',
     'covered_buttocks',
-    'face_femme',
+    #'face_femme',
     #'exposed_belly',
     #'covered_belly',
-    #'exposed_feet',
+    'exposed_feet',
     #'covered_feet',
     #'exposed_armpits',
-    #'exposed_penis',
+    'exposed_penis',
     #'exposed_chest',
     #'face_masc',
 ]
@@ -72,9 +82,17 @@ items_to_censor = [
 # one of the below (by removing the #).
 # you can override these per item below in Item Overrides
 #default_censor_style = [ 'bar', (0,0,0) ] # second item is the color of the bar, in RGB code 
-default_censor_style = [ 'bar', (247,154,192) ] # second item is the color of the bar, in RGB code 
+#default_censor_style = [ 'bar', (247,154,192) ] # second item is the color of the bar, in RGB code 
 #default_censor_style = [ 'blur', 50 ] # second item is how aggressive a blur.  20 is a reasonable number.  Higher is more blurry.
-#default_censor_style = [ 'pixel', 40 ] # second item is the how much to pixelate.  Higher is more censored.  10 means that a 200x400 pixel region is pixelated to 20x40 pixels.
+#default_censor_style = [ 'pixel', 10 ] # second item is the how much to pixelate.  Higher is more censored.  10 means that a 200x400 pixel region is pixelated to 20x40 pixels.
+default_censor_style = [ 'random', [ 500,['pixel',10], 25,['bar',(0,0,0)], 500,['blur',25], 25,['bar',(247,154,192)], 1,['debug',[0,0,0]] ] ] # added: Randomizes the censoring between the methods according to weights
+
+
+# Colored borders around the boxes for depending on censor_item analogue to debug images
+borders = True
+sticker = True
+sticker_exceptions = ['face_femme', 'covered_belly', 'exposed_belly', 'covered_feet', 'exposed_feet', 'exposed_penis']
+border_items = ['covered_feet', 'exposed_feet', 'exposed_penis']
 
 # min_prob: how confident are we that the item is identified before blocking
 default_min_prob = 0.45 #0.50 means 50% certainty
@@ -84,17 +102,19 @@ default_min_prob = 0.45 #0.50 means 50% certainty
 default_area_safety = 0 # i.e., 0.2 means add 20% to width and 20% to height
 
 # time_safety: how long before and after the identification do we want to censor?
-default_time_safety = 0.4 #i.e., 0.3 means 0.3 seconds before and 0.3 seconds after
+default_time_safety = 0.6 #i.e., 0.3 means 0.3 seconds before and 0.3 seconds after
 
 # Item Overrides: to override any of the above defaults for a specific item
 item_overrides = {
         #example:
-        #face_masc : {'min_prob': 0.40, 'width_area_safety': 0.3, 'height_area_safety': 0.1, 'time_safety': 0.6 },
-
-        'exposed_vulva':  {'width_area_safety': 0.4, 'height_area_safety': 0.4 },
-        'exposed_breast': {'width_area_safety': 0.4 },
-        'covered_breast': {'width_area_safety': 0.4 },
-        'face_femme': {'censor_style': [ 'pixel', 10 ] }
+        #'face_masc' : {'min_prob': 0.40, 'width_area_safety': 0.3, 'height_area_safety': 0.1, 'time_safety': 0.6 },
+        'face_femme': {'censor_style': [ 'pixel', 4 ] },
+        'covered_vulva': {'min_prob': 0.6, 'width_area_safety': 0.1, 'height_area_safety': 0.1},
+        'exposed_vulva':  {'width_area_safety': 0.1, 'height_area_safety': 0.1},
+        'exposed_breast': {'width_area_safety': 0.1, 'height_area_safety': 0.1},
+        'covered_breast': {'width_area_safety': 0.1, 'height_area_safety': 0.1},
+        'exposed_penis': {'censor_style': [ 'blur', 0.001 ], 'min_prob': 0.60},
+        'exposed_feet': {'censor_style': [ 'blur', 0.001 ], 'min_prob': 0.60}
 }
 
 ################################################
@@ -129,7 +149,7 @@ cuda_device_id = 0
 # You probably don't need to change this
 censor_overlap_strategy = {
         'blur': 'single-pass',
-        'bar': 'none',
+        'bar': 'single-pass',
         'pixel': 'single-pass',
         'debug': 'none',
         }
@@ -142,7 +162,7 @@ censor_scale_strategy = 'feature' # scales N->1 by min feature dimension, with a
 
 # this determines how much delay is present in BetaVision
 # you may need to adjust this for performance reasons
-betavision_delay = 0.5 # seconds
+betavision_delay = 0.4 # seconds
 
 # should BetaVision use image interpolation?
 # setting this to true may make videos in BetaVision
@@ -165,5 +185,5 @@ debug_mode = 0
 ### If you're sharing the content, I ask that you keep
 ### the watermark.  However, you can turn it off here,
 ### if you decide to.
-enable_betasuite_watermark = True
-#enable_betasuite_watermark = False
+#enable_betasuite_watermark = True
+enable_betasuite_watermark = False

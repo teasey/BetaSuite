@@ -3,6 +3,7 @@ import os
 import math
 import time
 import subprocess as sp
+import traceback
 
 import betaconst
 import betaconfig
@@ -135,6 +136,7 @@ for root,d_names,f_names in os.walk(betaconst.video_path_uncensored):
                         while len( boxes ) and boxes[0]['start'] <= curr_time:
                             live_boxes.append( boxes.pop(0) )
 
+                        live_boxes = bu_censor.compare_boxes(live_boxes, vid_w, vid_h) # added
                         frame = bu_censor.censor_img_for_boxes( frame, live_boxes )
 
                         proc.stdin.write(frame.tobytes())
@@ -188,6 +190,8 @@ for root,d_names,f_names in os.walk(betaconst.video_path_uncensored):
 
             else:
                 print( "--- Skipping  %d/%d (not video): %s"%(fidx+1, len(f_names), fname ) )
+        except TypeError as errT:
+            print(traceback.format_exc())
         except BaseException as err:
         #if 1==0:
             print( "--- Skipping  %d/%d (failed)  [----- ----- ----- -----: -----]: %s"%(fidx+1, len(f_names), fname ) )

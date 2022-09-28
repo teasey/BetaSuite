@@ -39,19 +39,18 @@ for root,d_names,f_names in os.walk(betaconst.picture_path_uncensored):
     for fname in f_names:
         fidx += 1
         t0 = time.perf_counter()
+        print( "Processing %s"%(fname) )
         try:
             (stem, suffix ) = os.path.splitext(fname)
 
             uncensored_path = os.path.join( root, fname )
-            image = cv2.imread( uncensored_path )
+            image = cv2.imread( uncensored_path) # , cv2.IMREAD_UNCHANGED added
 
             if image is not None:
                 (img_h,img_w,_) = image.shape
                 image_hash = hashlib.md5(image).hexdigest()[16:]
 
                 censored_path = os.path.join( censored_folder, '%s-%s-%s-%s-%.3f%s'%(stem, image_hash, censor_hash, "+".join(map(str,betaconfig.picture_sizes)), betaconst.global_min_prob, suffix))
-                if suffix not in betaconst.imwrite_extensions:
-                    censored_path = censored_path + ".png"
 
                 t1 = time.perf_counter() 
                 if( not os.path.exists( censored_path ) ):
@@ -69,10 +68,10 @@ for root,d_names,f_names in os.walk(betaconst.picture_path_uncensored):
                             bu_hash.write_json( raw_boxes, box_hash_path )
                             all_raw_boxes.append( raw_boxes )
                             use_nn = True
-
+                    
                     if betaconfig.debug_mode&1:
                         print( all_raw_boxes )
-
+                    
                     t2 = time.perf_counter()
                     boxes = []
                     for raw_boxes in all_raw_boxes:
@@ -80,7 +79,6 @@ for root,d_names,f_names in os.walk(betaconst.picture_path_uncensored):
                             res = bu_censor.process_raw_box( item, img_w, img_h )
                             if res:
                                 boxes.append( res )
-
                     image = bu_censor.censor_img_for_boxes( image, boxes )
 
                     t3 = time.perf_counter()

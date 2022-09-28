@@ -94,6 +94,7 @@ while( True ):
     live_boxes = [ box for box in boxes if box['start'] < frame_timestamp < box['end'] ]
 
     times.append(time.perf_counter())
+    live_boxes = bu_censor.compare_boxes(live_boxes, betaconfig.vision_cap_width, betaconfig.vision_cap_height) # added
     frame = bu_censor.censor_img_for_boxes( frame, live_boxes )
 
     if betaconfig.debug_mode&1:
