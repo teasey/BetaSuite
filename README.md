@@ -1,5 +1,8 @@
 # BetaSuite
 
+This is a fork of Betasuite https://github.com/solarorb93/BetaSuite by solarorb93, all credits go to them for creating this.
+Please don't use this fork, as it is probably unstable and badly coded.
+
 ## Welcome to the BetaSuite installation guidelines. 
 BetaSuite is composed of the following programs
 - BetaTest: this is a test program that tries to ensure, as much as it can, that all of your dependencies are set up correctly.
